@@ -3,7 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
+//use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -21,7 +21,11 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'password',
+        'phone',
+        'password', 
+        'otp', 
+        'otp_expires_at', 
+        'is_active',
     ];
 
     /**
@@ -34,6 +38,9 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    public function isAdmin() {
+        return $this->role === 'admin';
+    }
     /**
      * Get the attributes that should be cast.
      *
