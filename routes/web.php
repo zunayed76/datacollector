@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SubmissionController;
 use Illuminate\Support\Facades\Route;
 
 //Guest Routes
@@ -14,6 +16,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/', function () { return view('dashboard'); })->name('dashboard');
     Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Profile Routes
+    Route::get('/profile/create', [ProfileController::class, 'create'])->name('profile.create');
+    Route::post('/profile/store', [ProfileController::class, 'store'])->name('profile.store');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+
+    // // Submission Placeholder
+    // Route::get('/submissions', function() {
+    //     return "Submissions page coming soon!";
+    // })->name('submissions.index');
+});
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/submissions', [SubmissionController::class, 'index'])->name('submissions.index');
+    Route::get('/submissions/create', [SubmissionController::class, 'create'])->name('submissions.create');
+    Route::post('/submissions/store', [SubmissionController::class, 'store'])->name('submissions.store');
 });
 
 Route::get('/register', function() { return view('auth.register'); })->name('register.page');
