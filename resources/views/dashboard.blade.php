@@ -6,7 +6,7 @@
 
 @section('content')
 <div class="row">
-    <div class="col-lg-6 col-6">
+    {{-- <div class="col-lg-6 col-6">
         @if(!Auth::user()->is_profile_completed)
             <div class="small-box bg-warning">
                 <div class="inner">
@@ -30,6 +30,35 @@
                     <i class="fas fa-user-edit"></i>
                 </div>
                 <a href="{{ route('profile.edit') }}" class="small-box-footer">
+                    Edit Profile <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        @endif
+    </div> --}}
+    <div class="col-lg-6 col-6">
+        @if(!Auth::user()->is_profile_completed)
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>Create</h3>
+                    <p>Setup Your Profile</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <a href="{{ route('submissions.create') }}" class="small-box-footer">
+                    Start Now <i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        @else
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>Update</h3>
+                    <p>Modify Profile Details</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+                <a href="{{ route('submissions.edit') }}" class="small-box-footer">
                     Edit Profile <i class="fas fa-arrow-circle-right"></i>
                 </a>
             </div>

@@ -3,6 +3,8 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubmissionController;
+use App\Models\District;
+use App\Models\Thana;
 use Illuminate\Support\Facades\Route;
 
 //Guest Routes
@@ -51,6 +53,15 @@ Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])-
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
 Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->name('otp.resend');
+
+
+Route::get('/get-districts/{division_id}', function ($division_id) {
+    return District::where('division_id', $division_id)->orderBy('name', 'asc')->get();
+})->name('get.districts');
+
+Route::get('/get-thanas/{district_id}', function ($district_id) {
+    return Thana::where('district_id', $district_id)->orderBy('name', 'asc')->get();
+})->name('get.thanas');
 // Route::get('/', function () {
 //     return view('dashboard/dashboard');
 // });

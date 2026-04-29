@@ -15,9 +15,9 @@ class ProfileController extends Controller
     public function create()
     {
         // If already completed, redirect to edit
-        if (Auth::user()->is_profile_completed) {
-            return redirect()->route('profile.edit');
-        }
+        // if (Auth::user()->is_profile_completed) {
+        //     return redirect()->route('profile.edit');
+        // }
         
         return view('profile.create');
     }
@@ -37,7 +37,7 @@ class ProfileController extends Controller
         /** @var \App\Models\User $user */
         $user->update([
             'phone' => $request->phone,
-            'is_profile_completed' => true, // Flip the flag here
+            //'is_profile_completed' => true, // Flip the flag here
         ]);
 
         return redirect()->route('dashboard')->with('success', 'Profile setup complete!');
