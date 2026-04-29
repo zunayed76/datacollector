@@ -7,7 +7,7 @@
 @section('content')
     <div class="card">
         <div class="card-body">
-            <p>If you see the AdminLTE styling and sidebar, the layout works!</p>
+            <p>If you see the AdminLTE  ok ok styling and sidebar, the layout works!</p>
             <button class="btn btn-primary">Test Button</button>
         </div>
     </div>
