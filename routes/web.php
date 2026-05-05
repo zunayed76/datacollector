@@ -36,6 +36,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/submissions', [SubmissionController::class, 'index'])->name('submissions.index');
     Route::get('/submissions/create', [SubmissionController::class, 'create'])->name('submissions.create');
     Route::post('/submissions/store', [SubmissionController::class, 'store'])->name('submissions.store');
+    Route::get('/submissions/{id}', [SubmissionController::class, 'show'])->name('submissions.show');
 });
 
 Route::get('/register', function() { return view('auth.register'); })->name('register.page');

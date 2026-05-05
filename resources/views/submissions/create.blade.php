@@ -42,7 +42,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>NID Number</label>
-                                    <input type="text" name="nid_number" class="form-control" placeholder="10/ 17 Digits" required>
+                                    <input type="text" name="nid_number" class="form-control" placeholder="10/ 17 Digits" >
                                 </div>
                             </div>
                         </div>
@@ -50,20 +50,20 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Father's Name</label>
-                                    <input type="text" name="fathers_name" class="form-control" required>
+                                    <input type="text" name="fathers_name" class="form-control" >
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Mother's Name</label>
-                                    <input type="text" name="mothers_name" class="form-control" required>
+                                    <input type="text" name="mothers_name" class="form-control" >
                                 </div>
                             </div>
                         </div>
                         <div class="form-group">
                             <label>NID Copy (PDF Only)</label>
                             <div class="custom-file">
-                                <input type="file" name="nid_file" class="custom-file-input" accept="application/pdf, image/jpeg, image/jpg" required>
+                                <input type="file" name="nid_file" class="custom-file-input" accept="application/pdf, image/jpeg, image/jpg" >
                                 <label class="custom-file-label">Choose NID File</label>
                             </div>
                         </div>

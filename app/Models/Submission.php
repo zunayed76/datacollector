@@ -23,7 +23,7 @@ class Submission extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function education(): HasMany
+    public function educations(): HasMany
     {
         return $this->hasMany(Education::class);
     }
