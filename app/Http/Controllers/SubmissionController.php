@@ -68,21 +68,22 @@ class SubmissionController extends Controller
     {
         // dd($request->all());
         // die();
-        // $request->validate([
-        //     'name' => 'required|string|max:255',
-        //     'fathers_name' => 'required|string|max:255',
-        //     'mothers_name' => 'required|string|max:255',
-        //     'nid_number' => 'required|numeric|unique:submissions,nid_number',
-        //     'nid_file' => 'nullable|mimes:pdf,jpg,jpeg,png|max:5120',
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'fathers_name' => 'required|string|max:255',
+            'mothers_name' => 'required|string|max:255',
+            'nid_number' => 'required|numeric|unique:submissions,nid_number',
+            'date_of_birth' => 'nullable|date|before:today',
+            'nid_file' => 'nullable|mimes:pdf,jpg,jpeg,png|max:5120',
             
-        //     // Address Validations
-        //     'present_division_id' => 'required',
-        //     'present_district_id' => 'required',
-        //     'present_thana_id' => 'required',
-        //     'permanent_division_id' => 'required',
-        //     'permanent_district_id' => 'required',
-        //     'permanent_thana_id' => 'required',
-        // ]);
+            // Address Validations
+            'present_division_id' => 'required',
+            'present_district_id' => 'required',
+            'present_thana_id' => 'required',
+            'permanent_division_id' => 'required',
+            'permanent_district_id' => 'required',
+            'permanent_thana_id' => 'required',
+        ]);
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
@@ -95,6 +96,7 @@ class SubmissionController extends Controller
             $submission->user_id = $user->id;
             $submission->fathers_name = $request->fathers_name;
             $submission->mothers_name = $request->mothers_name;
+            $submission->date_of_birth = $request->date_of_birth;
             $submission->nid_number = $request->nid_number;
 
             // Handle File Upload
@@ -106,22 +108,22 @@ class SubmissionController extends Controller
             $submission->save();
 
             // 3. Create Present Address
-            // $submission->addresses()->create([
-            //     'type'             => 'present',
-            //     'division_id'      => $request->present_division_id,
-            //     'district_id'      => $request->present_district_id,
-            //     'thana_id'         => $request->present_thana_id,
-            //     'location_details' => $request->present_address_details,
-            // ]);
+            $submission->addresses()->create([
+                'type'             => 'present',
+                'division_id'      => $request->present_division_id,
+                'district_id'      => $request->present_district_id,
+                'thana_id'         => $request->present_thana_id,
+                'location_details' => $request->present_address_details,
+            ]);
 
             // // 4. Create Permanent Address
-            // $submission->addresses()->create([
-            //     'type'             => 'permanent',
-            //     'division_id'      => $request->permanent_division_id,
-            //     'district_id'      => $request->permanent_district_id,
-            //     'thana_id'         => $request->permanent_thana_id,
-            //     'location_details' => $request->permanent_address_details,
-            // ]);
+            $submission->addresses()->create([
+                'type'             => 'permanent',
+                'division_id'      => $request->permanent_division_id,
+                'district_id'      => $request->permanent_district_id,
+                'thana_id'         => $request->permanent_thana_id,
+                'location_details' => $request->permanent_address_details,
+            ]);
 
             // 5. Create Education Rows
             // 5. Create Education Rows (with Certificates)

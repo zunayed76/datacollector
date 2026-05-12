@@ -60,6 +60,14 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Date of Birth</label>
+                                    <input type="date" name="date_of_birth" class="form-control">
+                                </div>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label>NID Copy (PDF Only)</label>
                             <div class="custom-file">
