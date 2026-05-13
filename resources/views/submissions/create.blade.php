@@ -173,7 +173,7 @@
                     <div class="card-body">
                         <div class="form-group">
                             <label>Division</label>
-                            <select name="present_division_id" id="present_division" class="form-control select2-enable" style="width: 100%;">
+                            <select name="present_division_id" id="present_division_id" class="form-control select2-enable" style="width: 100%;">
                                 <option value="" disabled selected>Select Division</option>
                                 @foreach($divisions as $division)
                                     <option value="{{ $division->id }}">{{ $division->name }}</option>
@@ -182,19 +182,19 @@
                         </div>
                         <div class="form-group">
                             <label>District</label>
-                            <select name="present_district_id" id="present_district" class="form-control select2-enable" style="width: 100%;">
+                            <select name="present_district_id" id="present_district_id" class="form-control select2-enable" style="width: 100%;">
                                 <option value="">Select Division First</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Thana</label>
-                            <select name="present_thana_id" id="present_thana" class="form-control select2-enable" style="width: 100%;">
+                            <select name="present_thana_id" id="present_thana_id" class="form-control select2-enable" style="width: 100%;">
                                 <option value="">Select District First</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Address Details</label>
-                            <textarea name="present_address_details" id="present_details" class="form-control" rows="2" placeholder="House/Road/Village"></textarea>
+                            <textarea name="present_address_details" id="present_address_details" class="form-control" rows="2" placeholder="House/Road/Village"></textarea>
                         </div>
                     </div>
                 </div>
@@ -214,7 +214,7 @@
                     <div class="card-body">
                         <div class="form-group">
                             <label>Division</label>
-                            <select name="permanent_division_id" id="permanent_division" class="form-control select2-enable" style="width: 100%;">
+                            <select name="permanent_division_id" id="permanent_division_id" class="form-control select2-enable" style="width: 100%;">
                                 <option value="" disabled selected>Select Division</option>
                                 @foreach($divisions as $division)
                                     <option value="{{ $division->id }}">{{ $division->name }}</option>
@@ -223,19 +223,19 @@
                         </div>
                         <div class="form-group">
                             <label>District</label>
-                            <select name="permanent_district_id" id="permanent_district" class="form-control select2-enable" style="width: 100%;">
+                            <select name="permanent_district_id" id="permanent_district_id" class="form-control select2-enable" style="width: 100%;">
                                 <option value="">Select Division First</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Thana</label>
-                            <select name="permanent_thana_id" id="permanent_thana" class="form-control select2-enable" style="width: 100%;">
+                            <select name="permanent_thana_id" id="permanent_thana_id" class="form-control select2-enable" style="width: 100%;">
                                 <option value="">Select District First</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Address Details</label>
-                            <textarea name="permanent_address_details" id="permanent_details" class="form-control" rows="2" placeholder="House/Road/Village"></textarea>
+                            <textarea name="permanent_address_details" id="permanent_address_details" class="form-control" rows="2" placeholder="House/Road/Village"></textarea>
                         </div>
                     </div>
                 </div>
@@ -342,7 +342,7 @@ $(document).ready(function() {
     let langCount = 1; // THIS WAS MISSING
     const MAX_EDU = 5;
 
-    console.log("Script loaded and ready");
+    // console.log("Script loaded and ready");
     function fetchDropdownData(url, targetDropdown, placeholder) {
         targetDropdown.empty().append('<option value="">Loading...</option>');
         
@@ -365,63 +365,63 @@ $(document).ready(function() {
     // PRESENT ADDRESS CHANGE LISTENERS
     // Fetch Districts using named route
     // --- PRESENT ADDRESS ---
-    $('#present_division').on('change', function() {
+    $('#present_division_id').on('change', function() {
         let divId = $(this).val();
         if (divId) {
             // Generate the URL with a placeholder, then swap it in JS
             let url = "{{ route('get.districts', ':id') }}".replace(':id', divId);
-            fetchDropdownData(url, $('#present_district'), 'Select District');
-            $('#present_thana').empty().append('<option value="">Select District First</option>');
+            fetchDropdownData(url, $('#present_district_id'), 'Select District');
+            $('#present_thana_id').empty().append('<option value="">Select District First</option>');
         }
     });
 
-    $('#present_district').on('change', function() {
+    $('#present_district_id').on('change', function() {
         let distId = $(this).val();
         if (distId) {
             let url = "{{ route('get.thanas', ':id') }}".replace(':id', distId);
-            fetchDropdownData(url, $('#present_thana'), 'Select Thana');
+            fetchDropdownData(url, $('#present_thana_id'), 'Select Thana');
         }
     });
 
     // --- PERMANENT ADDRESS ---
-    $('#permanent_division').on('change', function() {
+    $('#permanent_division_id').on('change', function() {
         let divId = $(this).val();
         if (divId) {
             let url = "{{ route('get.districts', ':id') }}".replace(':id', divId);
-            fetchDropdownData(url, $('#permanent_district'), 'Select District');
-            $('#permanent_thana').empty().append('<option value="">Select District First</option>');
+            fetchDropdownData(url, $('#permanent_district_id'), 'Select District');
+            $('#permanent_thana_id').empty().append('<option value="">Select District First</option>');
         }
     });
 
-    $('#permanent_district').on('change', function() {
+    $('#permanent_district_id').on('change', function() {
         let distId = $(this).val();
         if (distId) {
             let url = "{{ route('get.thanas', ':id') }}".replace(':id', distId);
-            fetchDropdownData(url, $('#permanent_thana'), 'Select Thana');
+            fetchDropdownData(url, $('#permanent_thana_id'), 'Select Thana');
         }
     });
     // "SAME AS PRESENT" CHECKBOX LOGIC
     // --- SAME AS PRESENT CHECKBOX ---
     $('#same_as_present').on('change', function() {
         if ($(this).is(':checked')) {
-            const divId = $('#present_division').val();
-            const distId = $('#present_district').val();
-            const thanaId = $('#present_thana').val();
+            const divId = $('#present_division_id').val();
+            const distId = $('#present_district_id').val();
+            const thanaId = $('#present_thana_id').val();
 
             // 1. Sync Division - This triggers the listener using the correct Named Route
-            $('#permanent_division').val(divId).trigger('change');
+            $('#permanent_division_id').val(divId).trigger('change');
 
             // 2. Wait for Districts to load, then sync District
             setTimeout(function() {
-                $('#permanent_district').val(distId).trigger('change');
+                $('#permanent_district_id').val(distId).trigger('change');
                 
                 // 3. Wait for Thanas to load, then sync Thana
                 setTimeout(function() {
-                    $('#permanent_thana').val(thanaId).trigger('change');
+                    $('#permanent_thana_id').val(thanaId).trigger('change');
                 }, 700); // Increased delay for local network lag
             }, 700);
 
-            $('#permanent_details').val($('#present_details').val());
+            $('#permanent_address_details').val($('#present_address_details').val());
         }
     });
     // 2. EDUCATION ADD LOGIC

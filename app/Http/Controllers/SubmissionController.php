@@ -92,8 +92,8 @@ class SubmissionController extends Controller
             'permanent_address_details' => 'nullable|string',
 
             // Files
-            'nid_file'                  => 'nullable|file|mimes:pdf,jpg,jpeg|max:5120',
-            'picture'                   => 'nullable|image|mimes:jpg,jpeg|max:5120',
+            'nid_file'                  => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'picture'                   => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
 
             // Arrays (Education & Languages)
             // 'education'                 => 'required|array|min:1',
