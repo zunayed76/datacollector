@@ -15,7 +15,7 @@
                 <div class="card card-primary">
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible m-2">
-                            <button type="button" class="close" data-dismiss="dismiss" aria-hidden="true">×</button>
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
                             <h5><i class="icon fas fa-ban"></i> Error!</h5>
                             {{ session('error') }}
                         </div>
@@ -59,6 +59,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Date of Birth</label>
+                                    {{-- Safe date formatting for the input field --}}
                                     <input type="date" name="date_of_birth" class="form-control" value="{{ old('date_of_birth', $submission->date_of_birth ? $submission->date_of_birth->format('Y-m-d') : '') }}">
                                 </div>
                             </div>
@@ -120,21 +121,27 @@
                         </div>
 
                         <div class="row mt-3">
-                            <div class="col-md-6">
+                            <div class="col-md-6 text-center">
+                                @if($submission->picture)
+                                    <img src="{{ asset('storage/'.$submission->picture) }}" class="img-thumbnail mb-2" style="height: 100px;">
+                                @endif
                                 <div class="form-group">
-                                    <label>Update NID Copy (Leave blank to keep current)</label>
-                                    <div class="custom-file">
-                                        <input type="file" name="nid_file" class="custom-file-input">
-                                        <label class="custom-file-label">Choose new file...</label>
+                                    <label>Update Profile Picture</label>
+                                    <div class="custom-file text-left">
+                                        <input type="file" name="picture" class="custom-file-input" id="picture">
+                                        <label class="custom-file-label" for="picture">Choose photo...</label>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 text-center">
+                                @if($submission->nid_file)
+                                    <div class="mb-2"><span class="badge badge-info">Current NID Attached</span></div>
+                                @endif
                                 <div class="form-group">
-                                    <label>Update Profile Picture (Leave blank to keep current)</label>
-                                    <div class="custom-file">
-                                        <input type="file" name="picture" class="custom-file-input">
-                                        <label class="custom-file-label">Choose new photo...</label>
+                                    <label>Update NID Copy</label>
+                                    <div class="custom-file text-left">
+                                        <input type="file" name="nid_file" class="custom-file-input" id="nid_file">
+                                        <label class="custom-file-label" for="nid_file">Choose file...</label>
                                     </div>
                                 </div>
                             </div>
@@ -148,7 +155,8 @@
         <div class="row">
             @foreach(['present', 'permanent'] as $type)
             @php 
-                $addr = $submission->addresses->where('address_type', $type)->first(); 
+                // FIXED: Changed 'address_type' to 'type' to match your Address model
+                $addr = $submission->addresses->where('type', $type)->first(); 
                 $cardClass = $type == 'present' ? 'card-info' : 'card-secondary';
             @endphp
             <div class="col-md-6">
@@ -160,26 +168,35 @@
                         <div class="form-group">
                             <label>Division</label>
                             <select name="{{ $type }}_division_id" id="{{ $type }}_division" class="form-control">
+                                <option value="">Select Division</option>
                                 @foreach($divisions as $division)
-                                    <option value="{{ $division->id }}" {{ $addr->division_id == $division->id ? 'selected' : '' }}>{{ $division->name }}</option>
+                                    <option value="{{ $division->id }}" {{ ($addr && $addr->division_id == $division->id) ? 'selected' : '' }}>{{ $division->name }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="form-group">
                             <label>District</label>
                             <select name="{{ $type }}_district_id" id="{{ $type }}_district" class="form-control">
-                                <option value="{{ $addr->district_id }}">{{ $addr->district->name ?? 'Select District' }}</option>
+                                {{-- Loaded from the Controller's variables --}}
+                                @php $districts = ($type == 'present') ? $presentDistricts : $permanentDistricts; @endphp
+                                @foreach($districts as $district)
+                                    <option value="{{ $district->id }}" {{ $addr->district_id == $district->id ? 'selected' : '' }}>{{ $district->name }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Thana</label>
                             <select name="{{ $type }}_thana_id" id="{{ $type }}_thana" class="form-control">
-                                <option value="{{ $addr->thana_id }}">{{ $addr->thana->name ?? 'Select Thana' }}</option>
+                                @php $thanas = ($type == 'present') ? $presentThanas : $permanentThanas; @endphp
+                                @foreach($thanas as $thana)
+                                    <option value="{{ $thana->id }}" {{ $addr->thana_id == $thana->id ? 'selected' : '' }}>{{ $thana->name }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Address Details</label>
-                            <textarea name="{{ $type }}_address_details" class="form-control" rows="2">{{ old($type.'_address_details', $addr->address_details) }}</textarea>
+                            {{-- FIXED: Changed 'address_details' to 'location_details' to match model --}}
+                            <textarea name="{{ $type }}_location_details" class="form-control" rows="2">{{ old($type.'_location_details', $addr->location_details ?? '') }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -213,8 +230,9 @@
                             <tbody id="education-body">
                                 @foreach($submission->educations as $index => $edu)
                                 <tr class="edu-row">
-                                    <td><input type="text" name="education[{{ $index }}][degree]" value="{{ $edu->degree_name }}" class="form-control" required></td>
-                                    <td><input type="text" name="education[{{ $index }}][institute]" value="{{ $edu->institution_name }}" class="form-control" required></td>
+                                    {{-- FIXED: degree_name -> degree | institution_name -> institute --}}
+                                    <td><input type="text" name="education[{{ $index }}][degree]" value="{{ $edu->degree }}" class="form-control" required></td>
+                                    <td><input type="text" name="education[{{ $index }}][institute]" value="{{ $edu->institute }}" class="form-control" required></td>
                                     <td><input type="number" name="education[{{ $index }}][passing_year]" value="{{ $edu->passing_year }}" class="form-control" required></td>
                                     <td><input type="text" name="education[{{ $index }}][grade]" value="{{ $edu->grade }}" class="form-control" required></td>
                                     <td><button type="button" class="btn btn-danger btn-sm remove-edu"><i class="fas fa-times"></i></button></td>
@@ -251,11 +269,12 @@
                             <tbody id="language-body">
                                 @foreach($submission->languages as $index => $lang)
                                 <tr class="lang-row">
-                                    <td><input type="text" name="languages[{{ $index }}][name]" value="{{ $lang->name }}" class="form-control" required></td>
+                                    {{-- FIXED: name -> language_name | proficiency -> proficiency_level --}}
+                                    <td><input type="text" name="languages[{{ $index }}][language_name]" value="{{ $lang->language_name }}" class="form-control" required></td>
                                     <td>
-                                        <select name="languages[{{ $index }}][proficiency]" class="form-control">
+                                        <select name="languages[{{ $index }}][proficiency_level]" class="form-control">
                                             @foreach(['Beginner', 'Intermediate', 'Fluent', 'Native'] as $level)
-                                                <option value="{{ $level }}" {{ $lang->proficiency == $level ? 'selected' : '' }}>{{ $level }}</option>
+                                                <option value="{{ $level }}" {{ $lang->proficiency_level == $level ? 'selected' : '' }}>{{ $level }}</option>
                                             @endforeach
                                         </select>
                                     </td>
@@ -282,7 +301,7 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
-        // 1. Initialize counters based on existing data
+        // Initialize counters based on existing data
         let eduCount = {{ $submission->educations->count() }};
         let langCount = {{ $submission->languages->count() }};
         const MAX_EDU = 5;
@@ -291,7 +310,9 @@
         function fetchDropdownData(url, targetDropdown, placeholder) {
             targetDropdown.empty().append('<option value="">Loading...</option>');
             $.ajax({
-                url: url, type: 'GET', dataType: 'json',
+                url: url, 
+                type: 'GET', 
+                dataType: 'json',
                 success: function(data) {
                     targetDropdown.empty().append('<option value="" disabled selected>' + placeholder + '</option>');
                     $.each(data, function(key, value) {
@@ -301,21 +322,25 @@
             });
         }
 
-        // Address Change Listeners (Unified for both types)
+        // Address Change Listeners
         ['present', 'permanent'].forEach(type => {
             $(`#${type}_division`).on('change', function() {
-                let url = "{{ route('get.districts', ':id') }}".replace(':id', $(this).val());
+                let divId = $(this).val();
+                if(!divId) return;
+                let url = "{{ route('get.districts', ':id') }}".replace(':id', divId);
                 fetchDropdownData(url, $(`#${type}_district`), 'Select District');
                 $(`#${type}_thana`).empty().append('<option value="">Select District First</option>');
             });
 
             $(`#${type}_district`).on('change', function() {
-                let url = "{{ route('get.thanas', ':id') }}".replace(':id', $(this).val());
+                let distId = $(this).val();
+                if(!distId) return;
+                let url = "{{ route('get.thanas', ':id') }}".replace(':id', distId);
                 fetchDropdownData(url, $(`#${type}_thana`), 'Select Thana');
             });
         });
 
-        // Add Education
+        // Add Education Row
         $('#add-education').on('click', function() {
             if ($('.edu-row').length < MAX_EDU) {
                 let html = `
@@ -328,16 +353,18 @@
                 </tr>`;
                 $('#education-body').append(html);
                 eduCount++;
+            } else {
+                alert('Maximum ' + MAX_EDU + ' education records allowed.');
             }
         });
 
-        // Add Language
+        // Add Language Row
         $('#add-language').on('click', function() {
             let html = `
             <tr class="lang-row">
-                <td><input type="text" name="languages[${langCount}][name]" class="form-control" required></td>
+                <td><input type="text" name="languages[${langCount}][language_name]" class="form-control" required></td>
                 <td>
-                    <select name="languages[${langCount}][proficiency]" class="form-control">
+                    <select name="languages[${langCount}][proficiency_level]" class="form-control">
                         <option value="Beginner">Beginner</option>
                         <option value="Intermediate">Intermediate</option>
                         <option value="Fluent">Fluent</option>
@@ -350,15 +377,15 @@
             langCount++;
         });
 
-        // Removal Logic
+        // Removal Logic (Delegated)
         $(document).on('click', '.remove-edu, .remove-row', function() {
             $(this).closest('tr').remove();
         });
 
-        // Custom File Label
+        // Custom File Label Update
         $(document).on('change', '.custom-file-input', function() {
             let fileName = $(this).val().split('\\').pop();
-            $(this).next('.custom-file-label').html(fileName);
+            $(this).next('.custom-file-label').addClass("selected").html(fileName);
         });
     });
 </script>

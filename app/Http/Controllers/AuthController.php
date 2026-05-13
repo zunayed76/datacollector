@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -26,15 +27,26 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
+            'role' => 'user',
             'password' => bcrypt($request->password),
             'otp' => $otp,
             'otp_expires_at' => Carbon::now()->addMinutes(15),
             'is_active' => false,
         ]);
 
-        Mail::raw("Your activation code is: $otp", function($m) use ($user) {
-            $m->to($user->email)->subject('Activate Your Account');
-        });
+        try {
+            Mail::raw("Your activation code is: $otp", function($m) use ($user) {
+                $m->to($user->email)->subject('Activate Your Account');
+            });
+        } catch (\Exception $e) {
+            // Log the error so you can debug it later
+            Log::error("Mail failed to send: " . $e->getMessage());
+            
+            // Still redirect the user so they aren't stuck on a 500 page
+            return redirect()->route('verify.page', ['email' => $user->email])
+                            ->with('error', 'We couldn\'t send the email, but your account was created. Please contact support/ Retry sending OTP.');
+        }
 
         return redirect()->route('verify.page', ['email' => $user->email])
                         ->with('success', 'Check your email for the OTP.');

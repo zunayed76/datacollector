@@ -217,15 +217,44 @@ class SubmissionController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $submission = Submission::with(['addresses', 'educations', 'languages'])->findOrFail($id);
+        // 1. Fetch submission with relationships
+        $submission = Submission::with([
+            'addresses.division', 
+            'addresses.district', 
+            'addresses.thana', 
+            'educations', 
+            'languages'
+        ])->findOrFail($id);
 
-        // Security Check
+        // 2. Security Check
         if (!$user->is_admin && $submission->user_id !== $user->id) {
             abort(403, 'Unauthorized action.');
         }
 
-        $divisions = \App\Models\Division::all(); // Needed for dropdowns
-        return view('submissions.edit', compact('submission', 'divisions'));
+        // 3. Load Dropdown Data
+        $divisions = \App\Models\Division::all();
+
+        // 4. Pre-load Districts and Thanas for the existing addresses
+        // We fetch them so the dropdowns aren't empty on page load.
+        $presentAddress = $submission->addresses->where('type', 'present')->first();
+        $permanentAddress = $submission->addresses->where('type', 'permanent')->first();
+
+        // Get Districts for the selected Divisions
+        $presentDistricts = $presentAddress ? \App\Models\District::where('division_id', $presentAddress->division_id)->get() : collect();
+        $permanentDistricts = $permanentAddress ? \App\Models\District::where('division_id', $permanentAddress->division_id)->get() : collect();
+
+        // Get Thanas for the selected Districts
+        $presentThanas = $presentAddress ? \App\Models\Thana::where('district_id', $presentAddress->district_id)->get() : collect();
+        $permanentThanas = $permanentAddress ? \App\Models\Thana::where('district_id', $permanentAddress->district_id)->get() : collect();
+
+        return view('submissions.edit', compact(
+            'submission', 
+            'divisions', 
+            'presentDistricts', 
+            'permanentDistricts', 
+            'presentThanas', 
+            'permanentThanas'
+        ));
     }
 
     public function update(Request $request, int $id)
@@ -238,6 +267,13 @@ class SubmissionController extends Controller
             abort(403);
         }
 
+        // Validation (Crucial to prevent SQL errors on loop)
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'education.*.degree' => 'required',
+            'languages.*.language_name' => 'required',
+        ]);
+
         try {
             DB::transaction(function () use ($request, $submission) {
                 // 1. Update Basic Info
@@ -247,48 +283,60 @@ class SubmissionController extends Controller
                     'marital_status', 'emergency_contact_name', 'emergency_contact_number'
                 ]));
 
-                // 2. Handle Files (Only update if new file is uploaded)
+                // 2. Handle Files (With Cleanup)
                 if ($request->hasFile('picture')) {
+                    if ($submission->picture) Storage::disk('public')->delete($submission->picture);
                     $submission->picture = $request->file('picture')->store('uploads/photos', 'public');
                 }
                 if ($request->hasFile('nid_file')) {
+                    if ($submission->nid_file) Storage::disk('public')->delete($submission->nid_file);
                     $submission->nid_file = $request->file('nid_file')->store('uploads/nids', 'public');
                 }
                 $submission->save();
 
-                // 3. Update Addresses (Present/Permanent)
-                // Logic: Update the existing rows based on address_type
+                // 3. Update Addresses
                 foreach (['present', 'permanent'] as $type) {
-                    $submission->addresses()->where('address_type', $type)->update([
-                        'division_id' => $request->input($type . '_division_id'),
-                        'district_id' => $request->input($type . '_district_id'),
-                        'thana_id'    => $request->input($type . '_thana_id'),
-                        'address_details' => $request->input($type . '_address_details'),
+                    // FIXED: 'type' instead of 'address_type', and 'location_details' instead of 'address_details'
+                    $submission->addresses()->where('type', $type)->update([
+                        'division_id'      => $request->input($type . '_division_id'),
+                        'district_id'      => $request->input($type . '_district_id'),
+                        'thana_id'         => $request->input($type . '_thana_id'),
+                        'location_details' => $request->input($type . '_location_details'),
                     ]);
                 }
 
-                // 4. Update Education & Languages
-                // Simplest approach for arrays: Delete old ones and re-insert new ones
+                // 4. Update Education
                 $submission->educations()->delete();
-                foreach ($request->education as $edu) {
-                    $submission->educations()->create([
-                        'degree_name'      => $edu['degree'],
-                        'institution_name' => $edu['institute'],
-                        'passing_year'     => $edu['passing_year'],
-                        'grade'            => $edu['grade'],
-                        // Handle certificate logic if necessary
-                    ]);
+                if ($request->has('education')) {
+                    foreach ($request->education as $edu) {
+                        $submission->educations()->create([
+                            // FIXED: degree/institute to match your Model properties
+                            'degree'       => $edu['degree'],
+                            'institute'    => $edu['institute'],
+                            'passing_year' => $edu['passing_year'],
+                            'grade'        => $edu['grade'],
+                        ]);
+                    }
                 }
 
+                // 5. Update Languages
                 $submission->languages()->delete();
-                foreach ($request->languages as $lang) {
-                    $submission->languages()->create($lang);
+                if ($request->has('languages')) {
+                    foreach ($request->languages as $lang) {
+                        $submission->languages()->create([
+                            // FIXED: language_name/proficiency_level to match your Model
+                            'language_name'     => $lang['language_name'],
+                            'proficiency_level' => $lang['proficiency_level'],
+                        ]);
+                    }
                 }
             });
 
             return redirect()->route('submissions.show', $id)->with('success', 'Profile updated successfully!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Update failed: ' . $e->getMessage());
+            // Log the error for your own debugging
+            \Log::error("Update failed for ID $id: " . $e->getMessage());
+            return back()->withInput()->with('error', 'Update failed: ' . $e->getMessage());
         }
     }
 

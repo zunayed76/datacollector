@@ -6,17 +6,34 @@
 
 @section('content')
 <div class="container-fluid pb-5">
+    {{-- Success Alert --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <h5><i class="icon fas fa-check"></i> Success!</h5>
+            {{ session('success') }}
+        </div>
+    @endif
+
+    {{-- Error Alert --}}
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <h5><i class="icon fas fa-ban"></i> Alert!</h5>
+            {{ session('error') }}
+        </div>
+    @endif
     <div class="row mt-3 pb-5">
         <div class="col-12">
-            <!-- Always visible: Back to List -->
             <a href="{{ route('submissions.index') }}" class="btn btn-default">
                 <i class="fas fa-list"></i> Back to List
             </a>
-                <a href="{{ route('submissions.edit', $submission->id) }}" class="btn btn-warning float-right ml-2">
-                    <i class="fas fa-edit"></i> Edit Profile
-                </a>
+            <a href="{{ route('submissions.edit', $submission->id) }}" class="btn btn-warning float-right ml-2">
+                <i class="fas fa-edit"></i> Edit Profile
+            </a>
         </div>
     </div>
+
     <!-- SECTION 1: PERSONAL INFORMATION -->
     <div class="row">
         <div class="col-md-12">
@@ -43,6 +60,7 @@
                                     <p><strong>Mother's Name:</strong> {{ $submission->mothers_name }}</p>
                                 </div>
                                 <div class="col-md-6">
+                                    {{-- Use ->format() safely because of the cast in your Submission model --}}
                                     <p><strong>Date of Birth:</strong> {{ $submission->date_of_birth ? $submission->date_of_birth->format('d M, Y') : 'N/A' }}</p>
                                     <p><strong>Religion:</strong> {{ $submission->religion }}</p>
                                     <p><strong>Gender:</strong> {{ ucfirst($submission->gender) }}</p>
@@ -75,6 +93,12 @@
 
     <!-- SECTION 2: ADDRESSES -->
     <div class="row">
+        {{-- Fixed filter: using 'type' instead of 'address_type' --}}
+        @php 
+            $present = $submission->addresses->where('type', 'present')->first(); 
+            $permanent = $submission->addresses->where('type', 'permanent')->first();
+        @endphp
+
         <!-- Present Address -->
         <div class="col-md-6">
             <div class="card card-outline card-info">
@@ -82,11 +106,11 @@
                     <h3 class="card-title">Present Address</h3>
                 </div>
                 <div class="card-body">
-                    @php $present = $submission->addresses->where('address_type', 'present')->first(); @endphp
                     <p><strong>Division:</strong> {{ $present->division->name ?? 'N/A' }}</p>
                     <p><strong>District:</strong> {{ $present->district->name ?? 'N/A' }}</p>
                     <p><strong>Thana:</strong> {{ $present->thana->name ?? 'N/A' }}</p>
-                    <p><strong>Details:</strong> {{ $present->address_details ?? 'N/A' }}</p>
+                    {{-- Fixed: using 'location_details' to match Address model --}}
+                    <p><strong>Details:</strong> {{ $present->location_details ?? 'N/A' }}</p>
                 </div>
             </div>
         </div>
@@ -98,11 +122,10 @@
                     <h3 class="card-title">Permanent Address</h3>
                 </div>
                 <div class="card-body">
-                    @php $permanent = $submission->addresses->where('address_type', 'permanent')->first(); @endphp
                     <p><strong>Division:</strong> {{ $permanent->division->name ?? 'N/A' }}</p>
                     <p><strong>District:</strong> {{ $permanent->district->name ?? 'N/A' }}</p>
                     <p><strong>Thana:</strong> {{ $permanent->thana->name ?? 'N/A' }}</p>
-                    <p><strong>Details:</strong> {{ $permanent->address_details ?? 'N/A' }}</p>
+                    <p><strong>Details:</strong> {{ $permanent->location_details ?? 'N/A' }}</p>
                 </div>
             </div>
         </div>
@@ -129,13 +152,14 @@
                         <tbody>
                             @forelse($submission->educations as $edu)
                                 <tr>
-                                    <td>{{ $edu->degree_name }}</td>
-                                    <td>{{ $edu->institution_name }}</td>
+                                    {{-- Fixed: Using 'degree' and 'institute' to match Education model --}}
+                                    <td>{{ $edu->degree }}</td>
+                                    <td>{{ $edu->institute }}</td>
                                     <td>{{ $edu->passing_year }}</td>
                                     <td>{{ $edu->grade }}</td>
                                     <td>
-                                        @if($edu->certificate_file)
-                                            <a href="{{ asset('storage/' . $edu->certificate_file) }}" target="_blank">View File</a>
+                                        @if($edu->certificate)
+                                            <a href="{{ asset('storage/' . $edu->certificate) }}" target="_blank">View File</a>
                                         @else
                                             -
                                         @endif
@@ -169,8 +193,9 @@
                         <tbody>
                             @forelse($submission->languages as $lang)
                                 <tr>
-                                    <td>{{ $lang->name }}</td>
-                                    <td><span class="badge badge-info">{{ $lang->proficiency }}</span></td>
+                                    {{-- Fixed: Match 'language_name' and 'proficiency_level' from Language model --}}
+                                    <td>{{ $lang->language_name }}</td>
+                                    <td><span class="badge badge-info">{{ $lang->proficiency_level }}</span></td>
                                 </tr>
                             @empty
                                 <tr><td colspan="2" class="text-center">No languages added.</td></tr>
@@ -179,15 +204,6 @@
                     </table>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="row mt-3">
-        <div class="col-12">
-            <a href="{{ route('submissions.index') }}" class="btn btn-default">Back to List</a>
-            @if(Auth::user()->is_admin)
-                <button class="btn btn-success float-right">Approve Submission</button>
-            @endif
         </div>
     </div>
 </div>
