@@ -60,19 +60,102 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Row 2: DOB & Emergency Name -->
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Date of Birth</label>
-                                    <input type="date" name="date_of_birth" class="form-control">
+                                    <input type="date" name="date_of_birth" class="form-control" value="{{ old('date_of_birth') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Religion</label>
+                                    <input type="text" name="religion" class="form-control" value="{{ old('religion') }}">
                                 </div>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>NID Copy (PDF Only)</label>
-                            <div class="custom-file">
-                                <input type="file" name="nid_file" class="custom-file-input" accept="application/pdf, image/jpeg, image/jpg" >
-                                <label class="custom-file-label">Choose NID File</label>
+
+                        <!-- Row 3: Emergency Number & Religion -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Emergency Contact Number</label>
+                                    <input type="text" name="emergency_contact_number" class="form-control" value="{{ old('emergency_contact_number') }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Emergency Contact Name</label>
+                                    <input type="text" name="emergency_contact_name" class="form-control" value="{{ old('emergency_contact_name') }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 4: Gender & Marital Status -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Gender</label>
+                                    <select name="gender" class="form-control">
+                                        <option value="">Select Gender</option>
+                                        <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Male</option>
+                                        <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Female</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Marital Status</label>
+                                    <select name="marital_status" class="form-control">
+                                        <option value="">Select Status</option>
+                                        <option value="single" {{ old('marital_status') == 'single' ? 'selected' : '' }}>Single</option>
+                                        <option value="married" {{ old('marital_status') == 'married' ? 'selected' : '' }}>Married</option>
+                                        <option value="divorced" {{ old('marital_status') == 'divorced' ? 'selected' : '' }}>Divorced</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Blood Group</label>
+                                    <select name="blood_group" class="form-control">
+                                        <option value="">Select Blood Group</option>
+                                        @foreach(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as $group)
+                                            <option value="{{ $group }}" {{ old('blood_group') == $group ? 'selected' : '' }}>
+                                                {{ $group }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 5: NID File (Full Row) -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>NID Copy (PDF/JPG)</label>
+                                    <div class="custom-file">
+                                        <input type="file" name="nid_file" class="custom-file-input" accept="application/pdf, image/jpeg, image/jpg">
+                                        <label class="custom-file-label">Choose NID File</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 6: User Picture (Full Row) -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Profile Picture (JPG/JPEG Only)</label>
+                                    <div class="custom-file">
+                                        <input type="file" name="picture" class="custom-file-input" accept="image/jpeg, image/jpg">
+                                        <label class="custom-file-label">Choose Photo</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

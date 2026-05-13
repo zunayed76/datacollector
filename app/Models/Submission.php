@@ -15,9 +15,22 @@ class Submission extends Model
         'fathers_name', 
         'mothers_name', 
         'nid_number', 
-        'nid_file'
+        'nid_file',
+        'emergency_contact_name',
+        'emergency_contact_number',
+        'date_of_birth',
+        'religion',
+        'gender',
+        'blood_group',
+        'marital_status',
+        'picture',
     ];
-
+    protected function casts(): array
+    {
+        return [
+            'date_of_birth' => 'date:Y-m-d',
+        ];
+    }
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

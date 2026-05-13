@@ -39,7 +39,7 @@
   </nav>
 
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="/" class="brand-link">
+    <a href="{{ route('landing') }}" class="brand-link">
       <span class="brand-text font-weight-light">DataCollector</span>
     </a>
 
@@ -47,7 +47,7 @@
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
           <li class="nav-item">
-            <a href="/" class="nav-link">
+            <a href="{{ route('dashboard') }}" class="nav-link">
               <i class="nav-icon fas fa-tachometer-alt"></i>
               <p>Dashboard</p>
             </a>
@@ -70,13 +70,13 @@
           @else
             <li class="nav-header">USER PANEL</li>
             <li class="nav-item">
-              <a href="{{ route('dashboard') }}" class="nav-link">
+              <a href="{{ route('submissions.create') }}" class="nav-link">
                 <i class="nav-icon fas fa-file-upload"></i>
-                <p>Submit RIT Data</p>
+                <p>Create Data</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ route('dashboard') }}" class="nav-link">
+              <a href="{{ route('submissions.index') }}" class="nav-link">
                 <i class="nav-icon fas fa-history"></i>
                 <p>My Submissions</p>
               </a>

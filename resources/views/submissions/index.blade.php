@@ -10,7 +10,7 @@
                 </h2>
                 @if(!Auth::user()->is_admin && !Auth::user()->is_profile_completed)
                     <a href="{{ route('submissions.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Complete Profile
+                        <i class="fas fa-plus"></i> Create New Submission
                     </a>
                 @endif
             </div>
@@ -35,7 +35,7 @@
                                     <th>Full Name</th>
                                     <th>NID Number</th>
                                     <th>Date Submitted</th>
-                                    <th>Status</th>
+                                    <!-- <th>Status</th> -->
                                     <th class="text-end px-4">Actions</th>
                                 </tr>
                             </thead>
@@ -52,9 +52,9 @@
                                         <td>{{ $submission->name }}</td>
                                         <td><code>{{ $submission->nid_number }}</code></td>
                                         <td>{{ $submission->created_at->format('M d, Y') }}</td>
-                                        <td>
+                                        <!-- <td>
                                             <span class="badge bg-success">Completed</span>
-                                        </td>
+                                        </td> -->
                                         <td class="text-end px-4">
                                             <a href="{{ route('submissions.show', $submission->id) }}" 
                                                class="btn btn-sm btn-outline-primary">

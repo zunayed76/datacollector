@@ -69,20 +69,43 @@ class SubmissionController extends Controller
         // dd($request->all());
         // die();
         $request->validate([
-            'name' => 'required|string|max:255',
-            'fathers_name' => 'required|string|max:255',
-            'mothers_name' => 'required|string|max:255',
-            'nid_number' => 'required|numeric|unique:submissions,nid_number',
-            'date_of_birth' => 'nullable|date|before:today',
-            'nid_file' => 'nullable|mimes:pdf,jpg,jpeg,png|max:5120',
+            'name'                      => 'required|string|max:255',
+            'nid_number'                => 'nullable|string|max:20',
+            'fathers_name'              => 'required|string|max:255',
+            'mothers_name'              => 'required|string|max:255',
+            'date_of_birth'             => 'nullable|date',
+            'religion'                  => 'nullable|string|max:100',
+            'emergency_contact_name'    => 'nullable|string|max:255',
+            'emergency_contact_number'  => 'nullable|string|max:20',
+            'gender'                    => 'nullable|string',
+            'marital_status'            => 'nullable|string',
+            'blood_group'               => 'nullable|string|max:5',
             
-            // Address Validations
-            'present_division_id' => 'required',
-            'present_district_id' => 'required',
-            'present_thana_id' => 'required',
-            'permanent_division_id' => 'required',
-            'permanent_district_id' => 'required',
-            'permanent_thana_id' => 'required',
+            // Addresses
+            'present_division_id'       => 'required|exists:divisions,id',
+            'present_district_id'       => 'required|exists:districts,id',
+            'present_thana_id'          => 'required|exists:thanas,id',
+            'present_address_details'   => 'nullable|string',
+            'permanent_division_id'     => 'required|exists:divisions,id',
+            'permanent_district_id'     => 'required|exists:districts,id',
+            'permanent_thana_id'        => 'required|exists:thanas,id',
+            'permanent_address_details' => 'nullable|string',
+
+            // Files
+            'nid_file'                  => 'nullable|file|mimes:pdf,jpg,jpeg|max:5120',
+            'picture'                   => 'nullable|image|mimes:jpg,jpeg|max:5120',
+
+            // Arrays (Education & Languages)
+            // 'education'                 => 'required|array|min:1',
+            // 'education.*.degree'        => 'required|string',
+            // 'education.*.institute'     => 'required|string',
+            // 'education.*.passing_year'  => 'required|numeric',
+            // 'education.*.grade'         => 'required|string',
+            // 'education.*.certificate'   => 'nullable|file|mimes:pdf|max:2048',
+            
+            // 'languages'                 => 'required|array|min:1',
+            // 'languages.*.name'          => 'required|string',
+            // 'languages.*.proficiency'   => 'required|string',
         ]);
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -90,19 +113,30 @@ class SubmissionController extends Controller
         DB::beginTransaction();
 
         try {
-            // 2. Create Submission (Personal Data Only)
             $submission = new \App\Models\Submission();
-            $submission->name = $request->name;
             $submission->user_id = $user->id;
+            $submission->name = $request->name;
             $submission->fathers_name = $request->fathers_name;
             $submission->mothers_name = $request->mothers_name;
             $submission->date_of_birth = $request->date_of_birth;
             $submission->nid_number = $request->nid_number;
+            
+            // Additional Fields
+            $submission->emergency_contact_name = $request->emergency_contact_name;
+            $submission->emergency_contact_number = $request->emergency_contact_number;
+            $submission->religion = $request->religion;
+            $submission->gender = $request->gender;
+            $submission->blood_group = $request->blood_group;
+            $submission->marital_status = $request->marital_status;
 
             // Handle File Upload
             if ($request->hasFile('nid_file')) {
-                $path = $request->file('nid_file')->store('uploads/nids', 'public');
-                $submission->nid_file = $path;
+                $nid_path = $request->file('nid_file')->store('uploads/nids', 'public');
+                $submission->nid_file = $nid_path;
+            }
+            if ($request->hasFile('picture')) {
+                $picture_path = $request->file('picture')->store('uploads/photos', 'public');
+                $submission->picture = $picture_path;
             }
 
             $submission->save();
@@ -164,9 +198,9 @@ class SubmissionController extends Controller
                 }
             }
             
-            // $user->update([
-            //     'is_profile_completed' => 1
-            // ]);
+            $user->update([
+                'is_profile_completed' => 1
+            ]);
             DB::commit();
             return redirect()->route('submissions.index')->with('success', 'Data Uploaded Successfully!');
 
@@ -177,4 +211,86 @@ class SubmissionController extends Controller
             return back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
     }
+
+    public function edit(int $id)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $submission = Submission::with(['addresses', 'educations', 'languages'])->findOrFail($id);
+
+        // Security Check
+        if (!$user->is_admin && $submission->user_id !== $user->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $divisions = \App\Models\Division::all(); // Needed for dropdowns
+        return view('submissions.edit', compact('submission', 'divisions'));
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $submission = Submission::findOrFail($id);
+        $user = Auth::user();
+
+        // Security Check
+        if (!$user->is_admin && $submission->user_id !== $user->id) {
+            abort(403);
+        }
+
+        try {
+            DB::transaction(function () use ($request, $submission) {
+                // 1. Update Basic Info
+                $submission->update($request->only([
+                    'name', 'fathers_name', 'mothers_name', 'nid_number', 
+                    'date_of_birth', 'religion', 'gender', 'blood_group', 
+                    'marital_status', 'emergency_contact_name', 'emergency_contact_number'
+                ]));
+
+                // 2. Handle Files (Only update if new file is uploaded)
+                if ($request->hasFile('picture')) {
+                    $submission->picture = $request->file('picture')->store('uploads/photos', 'public');
+                }
+                if ($request->hasFile('nid_file')) {
+                    $submission->nid_file = $request->file('nid_file')->store('uploads/nids', 'public');
+                }
+                $submission->save();
+
+                // 3. Update Addresses (Present/Permanent)
+                // Logic: Update the existing rows based on address_type
+                foreach (['present', 'permanent'] as $type) {
+                    $submission->addresses()->where('address_type', $type)->update([
+                        'division_id' => $request->input($type . '_division_id'),
+                        'district_id' => $request->input($type . '_district_id'),
+                        'thana_id'    => $request->input($type . '_thana_id'),
+                        'address_details' => $request->input($type . '_address_details'),
+                    ]);
+                }
+
+                // 4. Update Education & Languages
+                // Simplest approach for arrays: Delete old ones and re-insert new ones
+                $submission->educations()->delete();
+                foreach ($request->education as $edu) {
+                    $submission->educations()->create([
+                        'degree_name'      => $edu['degree'],
+                        'institution_name' => $edu['institute'],
+                        'passing_year'     => $edu['passing_year'],
+                        'grade'            => $edu['grade'],
+                        // Handle certificate logic if necessary
+                    ]);
+                }
+
+                $submission->languages()->delete();
+                foreach ($request->languages as $lang) {
+                    $submission->languages()->create($lang);
+                }
+            });
+
+            return redirect()->route('submissions.show', $id)->with('success', 'Profile updated successfully!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Update failed: ' . $e->getMessage());
+        }
+    }
+
+
 }

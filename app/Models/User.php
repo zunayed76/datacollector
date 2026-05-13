@@ -10,8 +10,6 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use HasFactory;
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
@@ -22,9 +20,10 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'date_of_birth',
+        'role',
         'phone',
-        'password', 
+        'password',
+        'remember_token', 
         'otp', 
         'otp_expires_at', 
         'is_active',
@@ -54,7 +53,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'date_of_birth' => 'date',
         ];
     }
 }

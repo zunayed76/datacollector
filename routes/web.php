@@ -7,6 +7,11 @@ use App\Models\District;
 use App\Models\Thana;
 use Illuminate\Support\Facades\Route;
 
+
+Route::get('/', function () {
+    return view('landing'); // Create this view
+})->name('landing');
+
 //Guest Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -15,7 +20,7 @@ Route::middleware('guest')->group(function () {
 
 // Authenticated Routes
 Route::middleware('auth')->group(function () {
-    Route::get('/', function () { return view('dashboard'); })->name('dashboard');
+    // Route::get('/', function () { return view('dashboard'); })->name('dashboard');
     Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -37,6 +42,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/submissions/create', [SubmissionController::class, 'create'])->name('submissions.create');
     Route::post('/submissions/store', [SubmissionController::class, 'store'])->name('submissions.store');
     Route::get('/submissions/{id}', [SubmissionController::class, 'show'])->name('submissions.show');
+    Route::get('/submissions/{id}/edit', [SubmissionController::class, 'edit'])->name('submissions.edit');
+    Route::put('/submissions/{id}/update', [SubmissionController::class, 'update'])->name('submissions.update');
 });
 
 Route::get('/register', function() { return view('auth.register'); })->name('register.page');
