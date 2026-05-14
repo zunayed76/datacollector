@@ -58,6 +58,11 @@
                 <div class="icon">
                     <i class="fas fa-user-edit"></i>
                 </div>
+                @if($submission)
+                <a href="{{ route('submissions.edit', $submission->id) }}" class="small-box-footer">
+                    <i class="fas fa-arrow-circle-right"></i>
+                </a>
+                @endif
                 
             </div>
         @endif

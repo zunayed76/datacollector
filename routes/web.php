@@ -21,7 +21,9 @@ Route::middleware('guest')->group(function () {
 // Authenticated Routes
 Route::middleware('auth')->group(function () {
     // Route::get('/', function () { return view('dashboard'); })->name('dashboard');
-    Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
+    // Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
+    Route::get('/dashboard', [SubmissionController::class, 'dashboard'])
+    ->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Profile Routes
@@ -44,6 +46,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/submissions/{id}', [SubmissionController::class, 'show'])->name('submissions.show');
     Route::get('/submissions/{id}/edit', [SubmissionController::class, 'edit'])->name('submissions.edit');
     Route::put('/submissions/{id}/update', [SubmissionController::class, 'update'])->name('submissions.update');
+    Route::delete('/submissions/{submission}', [SubmissionController::class, 'destroy'])
+     ->name('submissions.destroy');
+    Route::get('submissions/{submission}/pdf', [SubmissionController::class, 'downloadPdf'])
+     ->name('submissions.pdf');
 });
 
 Route::get('/register', function() { return view('auth.register'); })->name('register.page');

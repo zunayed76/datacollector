@@ -1,42 +1,10 @@
-@extends('layouts.layout')
+<html> 
 
-@section('header')
-    <h1 class="m-0">Profile Details: {{ $submission->name }}</h1>
-@endsection
-
-@section('content')
+<head>
+<h1 class="m-0">Profile Details: {{ $submission->name }}</h1>
+</head>
+<body>
 <div class="container-fluid pb-5">
-    {{-- Success Alert --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-            <h5><i class="icon fas fa-check"></i> Success!</h5>
-            {{ session('success') }}
-        </div>
-    @endif
-
-    {{-- Error Alert --}}
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-            <h5><i class="icon fas fa-ban"></i> Alert!</h5>
-            {{ session('error') }}
-        </div>
-    @endif
-    <div class="row mt-3 pb-5">
-        <div class="col-12">
-            <a href="{{ route('submissions.index') }}" class="btn btn-default">
-                <i class="fas fa-list"></i> Back to List
-            </a>
-            <a href="{{ route('submissions.pdf', $submission->id) }}" class="btn btn-success float-right ml-2">
-                <i class="fas fa-file-pdf"></i> Download PDF
-            </a>
-            <a href="{{ route('submissions.edit', $submission->id) }}" class="btn btn-warning float-right ml-2">
-                <i class="fas fa-edit"></i> Edit Profile
-            </a>
-        </div>
-    </div>
-
     <!-- SECTION 1: PERSONAL INFORMATION -->
     <div class="row">
         <div class="col-md-12">
@@ -44,6 +12,8 @@
                 <div class="card-header">
                     <h3 class="card-title">Personal Information</h3>
                 </div>
+                <br>
+                <br>
                 <div class="card-body">
                     <div class="row mb-3">
                         <div class="col-md-3 text-center">
@@ -210,4 +180,4 @@
         </div>
     </div>
 </div>
-@endsection
+</body>

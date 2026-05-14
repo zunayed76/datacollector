@@ -43,6 +43,9 @@ class User extends Authenticatable
     public function isAdmin() {
         return $this->role === 'admin';
     }
+    public function getIsAdminAttribute() {
+        return $this->role === 'admin';
+    }
     /**
      * Get the attributes that should be cast.
      *

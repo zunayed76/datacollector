@@ -2,31 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Division;
 use App\Models\Submission; // Ensure this model exists after you create the table
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class SubmissionController extends Controller
 {
+    public function dashboard()
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Get the latest submission for the logged-in user
+        $submission = Submission::with('user')->latest()->first();
+
+        // You can also add counts for the dashboard if the user is an admin
+        $totalSubmissions = $user->isAdmin() ? \App\Models\Submission::count() : null;
+
+        return view('dashboard', compact('submission', 'totalSubmissions'));
+    }
     /**
-     * Display a listing of submissions based on role.
+     * Display a listing of submissions based on role.  
      */
     public function index()
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // if ($user->isAdmin()) {
-        //     // Admin: Fetch all submissions from all users
-        //     $submissions = Submission::with('user')->latest()->get();
-        //     return view('submissions.admin_index', compact('submissions'));
-        // }
+        if ($user->isAdmin()) {
+            // Admin: Fetch all submissions from all users
+            $submissions = Submission::with('user')->latest()->paginate(10);
+            return view('submissions.index', compact('submissions'));
+        }
 
         // Regular User: Fetch only their own submissions
-        $submissions = Submission::where('user_id', $user->id)->latest()->get();
+        $submissions = Submission::where('user_id', $user->id)->latest()->paginate(10);
         return view('submissions.index', compact('submissions'));
     }
 
@@ -49,7 +64,7 @@ class SubmissionController extends Controller
         ])->findOrFail($id);
 
         // 2. Security Check: Only the owner or an admin can view details
-        if ( !$user->is_admin && $submission->user_id !== $user->id) {
+        if ( !$user->isAdmin() && $submission->user_id !== $user->id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -227,7 +242,7 @@ class SubmissionController extends Controller
         ])->findOrFail($id);
 
         // 2. Security Check
-        if (!$user->is_admin && $submission->user_id !== $user->id) {
+        if (!$user->isAdmin() && $submission->user_id !== $user->id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -260,85 +275,163 @@ class SubmissionController extends Controller
     public function update(Request $request, int $id)
     {
         $submission = Submission::findOrFail($id);
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         // Security Check
-        if (!$user->is_admin && $submission->user_id !== $user->id) {
+        if (!$user->isAdmin() && $submission->user_id !== $user->id) {
             abort(403);
         }
-
-        // Validation (Crucial to prevent SQL errors on loop)
+        // 1. Validation
         $request->validate([
             'name' => 'required|string|max:255',
-            'education.*.degree' => 'required',
-            'languages.*.language_name' => 'required',
+            'present_division_id' => 'required',
+            'present_district_id' => 'required',
+            'permanent_division_id' => 'required',
+            'permanent_district_id' => 'required',
+            'education.*.degree' => 'required|string',
+            'education.*.institute' => 'required|string',
+            'education.*.certificate' => 'nullable|file|mimes:pdf,jpg,png|max:2048',
         ]);
 
-        try {
-            DB::transaction(function () use ($request, $submission) {
-                // 1. Update Basic Info
-                $submission->update($request->only([
-                    'name', 'fathers_name', 'mothers_name', 'nid_number', 
-                    'date_of_birth', 'religion', 'gender', 'blood_group', 
-                    'marital_status', 'emergency_contact_name', 'emergency_contact_number'
-                ]));
+        // 2. Update Main Submission Data
+        $submissionData = $request->only([
+            'name', 'nid_number', 'fathers_name', 'mothers_name', 
+            'date_of_birth', 'religion', 'gender', 'marital_status', 
+            'blood_group', 'emergency_contact_number', 'emergency_contact_name'
+        ]);
 
-                // 2. Handle Files (With Cleanup)
-                if ($request->hasFile('picture')) {
-                    if ($submission->picture) Storage::disk('public')->delete($submission->picture);
-                    $submission->picture = $request->file('picture')->store('uploads/photos', 'public');
-                }
-                if ($request->hasFile('nid_file')) {
-                    if ($submission->nid_file) Storage::disk('public')->delete($submission->nid_file);
-                    $submission->nid_file = $request->file('nid_file')->store('uploads/nids', 'public');
-                }
-                $submission->save();
-
-                // 3. Update Addresses
-                foreach (['present', 'permanent'] as $type) {
-                    // FIXED: 'type' instead of 'address_type', and 'location_details' instead of 'address_details'
-                    $submission->addresses()->where('type', $type)->update([
-                        'division_id'      => $request->input($type . '_division_id'),
-                        'district_id'      => $request->input($type . '_district_id'),
-                        'thana_id'         => $request->input($type . '_thana_id'),
-                        'location_details' => $request->input($type . '_location_details'),
-                    ]);
-                }
-
-                // 4. Update Education
-                $submission->educations()->delete();
-                if ($request->has('education')) {
-                    foreach ($request->education as $edu) {
-                        $submission->educations()->create([
-                            // FIXED: degree/institute to match your Model properties
-                            'degree'       => $edu['degree'],
-                            'institute'    => $edu['institute'],
-                            'passing_year' => $edu['passing_year'],
-                            'grade'        => $edu['grade'],
-                        ]);
-                    }
-                }
-
-                // 5. Update Languages
-                $submission->languages()->delete();
-                if ($request->has('languages')) {
-                    foreach ($request->languages as $lang) {
-                        $submission->languages()->create([
-                            // FIXED: language_name/proficiency_level to match your Model
-                            'language_name'     => $lang['language_name'],
-                            'proficiency_level' => $lang['proficiency_level'],
-                        ]);
-                    }
-                }
-            });
-
-            return redirect()->route('submissions.show', $id)->with('success', 'Profile updated successfully!');
-        } catch (\Exception $e) {
-            // Log the error for your own debugging
-            \Log::error("Update failed for ID $id: " . $e->getMessage());
-            return back()->withInput()->with('error', 'Update failed: ' . $e->getMessage());
+        // Handle Main Profile Picture
+        if ($request->hasFile('picture')) {
+            if ($submission->picture) Storage::disk('public')->delete($submission->picture);
+            $submissionData['picture'] = $request->file('picture')->store('profiles', 'public');
         }
-    }
 
+        // Handle Main NID File
+        if ($request->hasFile('nid_file')) {
+            if ($submission->nid_file) Storage::disk('public')->delete($submission->nid_file);
+            $submissionData['nid_file'] = $request->file('nid_file')->store('nids', 'public');
+        }
+
+        $submission->update($submissionData);
+
+        // 3. Update Addresses (Mandatory)
+        foreach (['present', 'permanent'] as $type) {
+            $submission->addresses()->updateOrCreate(
+                ['type' => $type],
+                [
+                    'division_id' => $request->input($type . '_division_id'),
+                    'district_id' => $request->input($type . '_district_id'),
+                    'thana_id' => $request->input($type . '_thana_id'),
+                    'location_details' => $request->input($type . '_location_details'),
+                ]
+            );
+        }
+
+        // 4. Handle Education (The "Non-Buggy" Way)
+        $keptEduIds = [];
+        $educationInput = $request->input('education', []);
+
+        foreach ($educationInput as $index => $item) {
+            $eduData = [
+                'degree'       => $item['degree'],
+                'institute'    => $item['institute'],
+                'passing_year' => $item['passing_year'],
+                'grade'        => $item['grade'],
+            ];
+
+            // Check for new certificate upload for THIS specific row
+            if ($request->hasFile("education.{$index}.certificate")) {
+                // If updating an existing record, delete the old file first
+                if (isset($item['id'])) {
+                    $oldEdu = $submission->educations()->find($item['id']);
+                    if ($oldEdu && $oldEdu->certificate) {
+                        Storage::disk('public')->delete($oldEdu->certificate);
+                    }
+                }
+                $eduData['certificate'] = $request->file("education.{$index}.certificate")->store('certificates', 'public');
+            }
+
+            // updateOrCreate uses the ID if present; if not, it creates a new record
+            $eduRecord = $submission->educations()->updateOrCreate(
+                ['id' => $item['id'] ?? null],
+                $eduData
+            );
+
+            $keptEduIds[] = $eduRecord->id;
+        }
+
+        // Delete education records that were removed in the UI
+        $submission->educations()->whereNotIn('id', $keptEduIds)->delete();
+
+        // 5. Handle Languages (Optional, following same logic)
+        $keptLangIds = [];
+        $languagesInput = $request->input('languages', []);
+        foreach ($languagesInput as $langItem) {
+            $langRecord = $submission->languages()->updateOrCreate(
+                ['id' => $langItem['id'] ?? null],
+                [
+                    'language_name' => $langItem['language_name'],
+                    'proficiency_level' => $langItem['proficiency_level'],
+                ]
+            );
+            $keptLangIds[] = $langRecord->id;
+        }
+        $submission->languages()->whereNotIn('id', $keptLangIds)->delete();
+
+        return redirect()->route('submissions.show', $submission->id)
+                        ->with('success', 'Profile updated successfully.');
+    }
+    public function downloadPdf(Submission $submission)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        // Check if the user is NOT an admin AND NOT the owner
+        abort_if(
+            !$user->isAdmin() && $submission->user_id !== $user->id, 
+            403, 
+            'You are not authorized to download this PDF.'
+        );
+
+        // Eager load relationships
+        $submission->load(['user', 'addresses.division', 'addresses.district', 'addresses.thana', 'educations', 'languages']);
+
+        //$pdf = Pdf::loadView('submissions.pdf', compact('submission'));
+        $pdf = Pdf::loadView('submissions.pdf', compact('submission'))
+              ->setPaper('a4', 'portrait')
+              ->setOption([
+                  'isRemoteEnabled' => true,
+                  'isHtml5ParserEnabled' => true,
+                  'chroot' => public_path(),
+              ]);
+
+        return $pdf->download('Submission-' . $submission->name . '.pdf');
+    }
+    public function destroy(Submission $submission)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        // Check if the user is NOT an admin AND NOT the owner
+        // Authorization: Only admin or owner can delete
+        if (!$user->isAdmin() && $submission->user_id !== $user->id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Optional: Delete physical files if they exist
+        if ($submission->picture) {
+            Storage::disk('public')->delete($submission->picture);
+        }
+        if ($submission->nid_file) {
+            Storage::disk('public')->delete($submission->nid_file);
+        }
+
+        // Delete the submission (related records will delete if you set up 'onDelete cascade' in migrations)
+        $submission->addresses()->delete();
+        $submission->educations()->delete();
+        $submission->languages()->delete();
+        $submission->delete();
+
+        return redirect()->route('submissions.index')->with('success', 'Submission deleted successfully.');
+    }
 
 }

@@ -204,12 +204,12 @@
                 <div class="card card-outline card-secondary">
                     <div class="card-header">
                         <h3 class="card-title">Permanent Address</h3>
-                        <div class="card-tools">
+                        <!-- <div class="card-tools">
                             <div class="custom-control custom-checkbox">
                                 <input class="custom-control-input" type="checkbox" id="same_as_present">
                                 <label for="same_as_present" class="custom-control-label">Same as Present</label>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="card-body">
                         <div class="form-group">
@@ -458,7 +458,6 @@ $(document).ready(function() {
     // 3. LANGUAGE ADD LOGIC
     $(document).on('click', '#add-language', function(e) {
         e.preventDefault();
-        console.log("Language button clicked");
         let html = `
         <tr class="lang-row">
             <td><input type="text" name="languages[${langCount}][name]" class="form-control" required></td>

@@ -180,7 +180,7 @@
                                 {{-- Loaded from the Controller's variables --}}
                                 @php $districts = ($type == 'present') ? $presentDistricts : $permanentDistricts; @endphp
                                 @foreach($districts as $district)
-                                    <option value="{{ $district->id }}" {{ $addr->district_id == $district->id ? 'selected' : '' }}>{{ $district->name }}</option>
+                                    <option value="{{ $district->id }}" {{ ($addr?->district_id == $district->id) ? 'selected' : '' }}>{{ $district->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -224,17 +224,32 @@
                                     <th>Institute</th>
                                     <th>Year</th>
                                     <th>Grade</th>
+                                    <th>Certificate</th> {{-- New Column --}}
                                     <th style="width: 40px"></th>
                                 </tr>
                             </thead>
                             <tbody id="education-body">
                                 @foreach($submission->educations as $index => $edu)
                                 <tr class="edu-row">
-                                    {{-- FIXED: degree_name -> degree | institution_name -> institute --}}
+                                    {{-- Hidden ID ensures the controller updates the correct record --}}
+                                    <input type="hidden" name="education[{{ $index }}][id]" value="{{ $edu->id }}">
+                                    
                                     <td><input type="text" name="education[{{ $index }}][degree]" value="{{ $edu->degree }}" class="form-control" required></td>
                                     <td><input type="text" name="education[{{ $index }}][institute]" value="{{ $edu->institute }}" class="form-control" required></td>
                                     <td><input type="number" name="education[{{ $index }}][passing_year]" value="{{ $edu->passing_year }}" class="form-control" required></td>
                                     <td><input type="text" name="education[{{ $index }}][grade]" value="{{ $edu->grade }}" class="form-control" required></td>
+                                    <td>
+                                        @if($edu->certificate)
+                                            <div class="mb-1">
+                                                <span class="badge badge-success"><i class="fas fa-check"></i> Certificate Uploaded</span>
+                                                <a href="{{ asset('storage/' . $edu->certificate) }}" target="_blank" class="ml-1"><i class="fas fa-external-link-alt"></i></a>
+                                            </div>
+                                        @endif
+                                        <div class="custom-file">
+                                            <input type="file" name="education[{{ $index }}][certificate]" class="custom-file-input">
+                                            <label class="custom-file-label">Update file...</label>
+                                        </div>
+                                    </td>
                                     <td><button type="button" class="btn btn-danger btn-sm remove-edu"><i class="fas fa-times"></i></button></td>
                                 </tr>
                                 @endforeach
@@ -345,10 +360,17 @@
             if ($('.edu-row').length < MAX_EDU) {
                 let html = `
                 <tr class="edu-row">
+                    {{-- New rows have no ID, so controller will create them --}}
                     <td><input type="text" name="education[${eduCount}][degree]" class="form-control" required></td>
                     <td><input type="text" name="education[${eduCount}][institute]" class="form-control" required></td>
                     <td><input type="number" name="education[${eduCount}][passing_year]" class="form-control" required></td>
                     <td><input type="text" name="education[${eduCount}][grade]" class="form-control" required></td>
+                    <td>
+                        <div class="custom-file">
+                            <input type="file" name="education[${eduCount}][certificate]" class="custom-file-input">
+                            <label class="custom-file-label">Upload Certificate</label>
+                        </div>
+                    </td>
                     <td><button type="button" class="btn btn-danger btn-sm remove-edu"><i class="fas fa-times"></i></button></td>
                 </tr>`;
                 $('#education-body').append(html);

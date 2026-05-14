@@ -61,6 +61,16 @@
                                                 <i class="fas fa-eye"></i> View Details
                                             </a>
                                         </td>
+                                        <td>
+                                            <form action="{{ route('submissions.destroy', $submission->id) }}" method="POST" class="d-inline" 
+                                                onsubmit="return confirm('Are you sure you want to delete this submission? This will remove all related addresses, education, and language records.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
