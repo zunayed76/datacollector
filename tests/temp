@@ -1,1 +1,193 @@
+{{-- Change this: --}}
+<option value="{{ $district->id }}" {{ $addr->district_id == $district->id ? 'selected' : '' }}>
 
+{{-- To this: --}}
+<option value="{{ $district->id }}" {{ ($addr?->district_id == $district->id) ? 'selected' : '' }}>
+
+{{-- Change this: --}}
+<p><strong>Division:</strong> {{ $present->division->name }}</p>
+
+{{-- To this: --}}
+<p><strong>Division:</strong> {{ $present?->division?->name ?? 'Not Set' }}</p>
+
+
+1. Update the Education Table Structure
+In the edit.blade.php file, modify the table headers and the @foreach loop. I have also added a hidden ID field for each row. This is crucial for the controller to know which record to update without accidentally deleting and recreating it (which would lose the original file).
+
+HTML
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Degree</th>
+            <th>Institute</th>
+            <th>Year</th>
+            <th>Grade</th>
+            <th>Certificate</th> {{-- New Column --}}
+            <th style="width: 40px"></th>
+        </tr>
+    </thead>
+    <tbody id="education-body">
+        @foreach($submission->educations as $index => $edu)
+        <tr class="edu-row">
+            {{-- Hidden ID ensures the controller updates the correct record --}}
+            <input type="hidden" name="education[{{ $index }}][id]" value="{{ $edu->id }}">
+            
+            <td><input type="text" name="education[{{ $index }}][degree]" value="{{ $edu->degree }}" class="form-control" required></td>
+            <td><input type="text" name="education[{{ $index }}][institute]" value="{{ $edu->institute }}" class="form-control" required></td>
+            <td><input type="number" name="education[{{ $index }}][passing_year]" value="{{ $edu->passing_year }}" class="form-control" required></td>
+            <td><input type="text" name="education[{{ $index }}][grade]" value="{{ $edu->grade }}" class="form-control" required></td>
+            <td>
+                @if($edu->certificate)
+                    <div class="mb-1">
+                        <span class="badge badge-success"><i class="fas fa-check"></i> Certificate Uploaded</span>
+                        <a href="{{ asset('storage/' . $edu->certificate) }}" target="_blank" class="ml-1"><i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                @endif
+                <div class="custom-file">
+                    <input type="file" name="education[{{ $index }}][certificate]" class="custom-file-input">
+                    <label class="custom-file-label">Update file...</label>
+                </div>
+            </td>
+            <td><button type="button" class="btn btn-danger btn-sm remove-edu"><i class="fas fa-times"></i></button></td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>
+2. Update the JavaScript for New Rows
+Update the add-education click listener in your <script> section to include the certificate file input for any new rows added by the user.
+
+JavaScript
+// Add Education Row
+$('#add-education').on('click', function() {
+    if ($('.edu-row').length < MAX_EDU) {
+        let html = `
+        <tr class="edu-row">
+            {{-- New rows have no ID, so controller will create them --}}
+            <td><input type="text" name="education[${eduCount}][degree]" class="form-control" required></td>
+            <td><input type="text" name="education[${eduCount}][institute]" class="form-control" required></td>
+            <td><input type="number" name="education[${eduCount}][passing_year]" class="form-control" required></td>
+            <td><input type="text" name="education[${eduCount}][grade]" class="form-control" required></td>
+            <td>
+                <div class="custom-file">
+                    <input type="file" name="education[${eduCount}][certificate]" class="custom-file-input">
+                    <label class="custom-file-label">Upload Certificate</label>
+                </div>
+            </td>
+            <td><button type="button" class="btn btn-danger btn-sm remove-edu"><i class="fas fa-times"></i></button></td>
+        </tr>`;
+        $('#education-body').append(html);
+        eduCount++;
+    } else {
+        alert('Maximum ' + MAX_EDU + ' education records allowed.');
+    }
+});
+
+
+use App\Models\Submission;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+public function update(Request $request, int $id)
+{
+    $submission = Submission::findOrFail($id);
+
+    // 1. Validation
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'present_division_id' => 'required',
+        'present_district_id' => 'required',
+        'permanent_division_id' => 'required',
+        'permanent_district_id' => 'required',
+        'education.*.degree' => 'required|string',
+        'education.*.institute' => 'required|string',
+        'education.*.certificate' => 'nullable|file|mimes:pdf,jpg,png|max:2048',
+    ]);
+
+    // 2. Update Main Submission Data
+    $submissionData = $request->only([
+        'name', 'nid_number', 'fathers_name', 'mothers_name', 
+        'date_of_birth', 'religion', 'gender', 'marital_status', 
+        'blood_group', 'emergency_contact_number', 'emergency_contact_name'
+    ]);
+
+    // Handle Main Profile Picture
+    if ($request->hasFile('picture')) {
+        if ($submission->picture) Storage::disk('public')->delete($submission->picture);
+        $submissionData['picture'] = $request->file('picture')->store('profiles', 'public');
+    }
+
+    // Handle Main NID File
+    if ($request->hasFile('nid_file')) {
+        if ($submission->nid_file) Storage::disk('public')->delete($submission->nid_file);
+        $submissionData['nid_file'] = $request->file('nid_file')->store('nids', 'public');
+    }
+
+    $submission->update($submissionData);
+
+    // 3. Update Addresses (Mandatory)
+    foreach (['present', 'permanent'] as $type) {
+        $submission->addresses()->updateOrCreate(
+            ['type' => $type],
+            [
+                'division_id' => $request->input($type . '_division_id'),
+                'district_id' => $request->input($type . '_district_id'),
+                'thana_id' => $request->input($type . '_thana_id'),
+                'location_details' => $request->input($type . '_location_details'),
+            ]
+        );
+    }
+
+    // 4. Handle Education (The "Non-Buggy" Way)
+    $keptEduIds = [];
+    $educationInput = $request->input('education', []);
+
+    foreach ($educationInput as $index => $item) {
+        $eduData = [
+            'degree'       => $item['degree'],
+            'institute'    => $item['institute'],
+            'passing_year' => $item['passing_year'],
+            'grade'        => $item['grade'],
+        ];
+
+        // Check for new certificate upload for THIS specific row
+        if ($request->hasFile("education.{$index}.certificate")) {
+            // If updating an existing record, delete the old file first
+            if (isset($item['id'])) {
+                $oldEdu = $submission->educations()->find($item['id']);
+                if ($oldEdu && $oldEdu->certificate) {
+                    Storage::disk('public')->delete($oldEdu->certificate);
+                }
+            }
+            $eduData['certificate'] = $request->file("education.{$index}.certificate")->store('certificates', 'public');
+        }
+
+        // updateOrCreate uses the ID if present; if not, it creates a new record
+        $eduRecord = $submission->educations()->updateOrCreate(
+            ['id' => $item['id'] ?? null],
+            $eduData
+        );
+
+        $keptEduIds[] = $eduRecord->id;
+    }
+
+    // Delete education records that were removed in the UI
+    $submission->educations()->whereNotIn('id', $keptEduIds)->delete();
+
+    // 5. Handle Languages (Optional, following same logic)
+    $keptLangIds = [];
+    $languagesInput = $request->input('languages', []);
+    foreach ($languagesInput as $langItem) {
+        $langRecord = $submission->languages()->updateOrCreate(
+            ['id' => $langItem['id'] ?? null],
+            [
+                'language_name' => $langItem['language_name'],
+                'proficiency_level' => $langItem['proficiency_level'],
+            ]
+        );
+        $keptLangIds[] = $langRecord->id;
+    }
+    $submission->languages()->whereNotIn('id', $keptLangIds)->delete();
+
+    return redirect()->route('submissions.show', $submission->id)
+                     ->with('success', 'Profile updated successfully.');
+}
