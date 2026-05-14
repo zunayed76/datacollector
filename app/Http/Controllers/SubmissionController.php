@@ -20,7 +20,6 @@ class SubmissionController extends Controller
 
         // Get the latest submission for the logged-in user
         $submission = Submission::with('user')->latest()->first();
-
         // You can also add counts for the dashboard if the user is an admin
         $totalSubmissions = $user->isAdmin() ? \App\Models\Submission::count() : null;
 
