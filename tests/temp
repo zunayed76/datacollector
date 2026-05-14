@@ -1,0 +1,2 @@
+Route::delete('/submissions/{submission}', [SubmissionController::class, 'destroy'])
+    ->name('submissions.destroy');
